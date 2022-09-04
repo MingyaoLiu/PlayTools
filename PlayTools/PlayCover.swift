@@ -2,7 +2,7 @@
 //  PlayCover.swift
 //  PlayTools
 //
-
+import AVKit
 import Foundation
 import UIKit
 import Security
@@ -15,6 +15,8 @@ final public class PlayCover: NSObject {
 
     var menuController: MenuController?
 
+    static var pipController: AVPictureInPictureController?
+
     var firstTime = true
 
     private override init() {}
@@ -24,6 +26,7 @@ final public class PlayCover: NSObject {
         PlaySettings.shared.setupLayout()
         PlayInput.shared.initialize()
         PlaySettings.shared.clearLegacy()
+        AVPictureInPictureController.swizzle()
     }
 
     @objc static public func quitWhenClose() {
@@ -62,6 +65,20 @@ final public class PlayCover: NSObject {
                 processSubviews(of: subview)
             }
         }
+    }
+}
+
+@objc extension AVPictureInPictureController {
+
+    static func swizzle() {
+        let originalMethod = class_getInstanceMethod(AVPictureInPictureController.self, #selector(AVPictureInPictureController.init(playerLayer:)))
+        let swizzledMethod = class_getInstanceMethod(AVPictureInPictureController.self, #selector(hook_init(playerLayer:)))
+        method_exchangeImplementations(originalMethod!, swizzledMethod!)
+    }
+
+    func hook_init(playerLayer: AVPlayerLayer) -> AVPictureInPictureController {
+        PlayCover.pipController = hook_init(playerLayer: playerLayer)
+        return PlayCover.pipController!
     }
 }
 
